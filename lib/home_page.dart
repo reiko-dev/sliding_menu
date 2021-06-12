@@ -10,8 +10,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
   late final AnimationController controller;
-  final animationDuration = Duration(milliseconds: 500);
-
+  final animationDuration = Duration(milliseconds: 800);
+  bool isOpen = false;
   @override
   void initState() {
     super.initState();
@@ -20,17 +20,21 @@ class _HomePageState extends State<HomePage>
       vsync: this,
     );
 
+    isOpen = true;
     controller.forward();
   }
 
   void toggleAnimation() {
-    if (controller.isCompleted)
+    if (controller.isCompleted) {
       controller.reverse();
-    else {
+      isOpen = false;
+    } else {
       if (controller.isDismissed) {
         controller.forward();
+        isOpen = true;
       }
     }
+    setState(() {});
   }
 
   @override
@@ -55,6 +59,7 @@ class _HomePageState extends State<HomePage>
           MyAppBarIcon(
             animationDuration: animationDuration,
             toggleAnimation: toggleAnimation,
+            isOpen: isOpen,
           ),
           SizedBox(width: 10),
         ],
@@ -126,15 +131,21 @@ class MyAnimatedButton extends StatelessWidget {
   final double width = 220;
 
   double getPosition() {
-    double positionX = (bc.maxWidth - width) / 2;
+    if (controller.status == AnimationStatus.reverse) {
+      double center = (bc.maxWidth - width) / 2;
 
-    // if (controller.status == AnimationStatus.forward) {
-    //   return positionX;
-    // }
+      return center + 400 * (1 - controller.value);
+    }
 
-    positionX *= bounceAnimation.value;
+    return (bc.maxWidth - width) / 2;
+  }
 
-    return positionX;
+  double getBounceValue() {
+    if (controller.status == AnimationStatus.reverse) {
+      return 1;
+    }
+
+    return bounceAnimation.value;
   }
 
   @override
@@ -178,7 +189,7 @@ class MyAnimatedButton extends StatelessWidget {
         child: Transform(
           transform: Matrix4.identity()
             ..translate(getPosition())
-            ..scale(bounceAnimation.value),
+            ..scale(getBounceValue()),
           child: child!,
         ),
       ),
@@ -193,36 +204,42 @@ class TopicsWidget extends StatelessWidget {
   })  : topicAnimation = Tween<double>(begin: 0, end: 1).animate(
           CurvedAnimation(
             parent: controller,
-            curve: Interval(0.0, 1.0, curve: Curves.linear),
+            curve: Interval(0.0, 0.5, curve: Curves.linear),
             reverseCurve: Interval(0.0, 1.0, curve: Curves.linear),
           ),
         ),
         topicAnimation2 = Tween<double>(begin: 0, end: 1).animate(
           CurvedAnimation(
             parent: controller,
-            curve: Interval(0.2, 1.0, curve: Curves.linear),
+            curve: Interval(0.1, 0.5, curve: Curves.linear),
             reverseCurve: Interval(0.0, 1.0, curve: Curves.linear),
           ),
         ),
         topicAnimation3 = Tween<double>(begin: 0, end: 1).animate(
           CurvedAnimation(
             parent: controller,
-            curve: Interval(0.3, 1.0, curve: Curves.linear),
+            curve: Interval(0.2, 0.5, curve: Curves.linear),
             reverseCurve: Interval(0.0, 1.0, curve: Curves.linear),
           ),
         ),
         topicAnimation4 = Tween<double>(begin: 0, end: 1).animate(
           CurvedAnimation(
             parent: controller,
-            curve: Interval(0.4, 1.0, curve: Curves.linear),
+            curve: Interval(0.3, 0.5, curve: Curves.linear),
             reverseCurve: Interval(0.0, 1.0, curve: Curves.linear),
           ),
         ),
         topicAnimation5 = Tween<double>(begin: 0, end: 1).animate(
           CurvedAnimation(
             parent: controller,
-            curve: Interval(0.5, 1.0, curve: Curves.linear),
+            curve: Interval(0.4, 0.5, curve: Curves.linear),
             reverseCurve: Interval(0.0, 1.0, curve: Curves.linear),
+          ),
+        ),
+        opacityAnimation = Tween<double>(begin: 0, end: 1).animate(
+          CurvedAnimation(
+            parent: controller,
+            curve: Interval(0.1, 1.0, curve: Curves.easeInCubic),
           ),
         ),
         super(key: ValueKey('topics-key'));
@@ -235,10 +252,19 @@ class TopicsWidget extends StatelessWidget {
   final Animation<double> topicAnimation3;
   final Animation<double> topicAnimation4;
   final Animation<double> topicAnimation5;
+  final Animation<double> opacityAnimation;
+
+  double getOpacity() {
+    if (controller.status == AnimationStatus.forward) {
+      return opacityAnimation.value;
+    }
+    return 1.0;
+  }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+
     return SizedBox(
       width: bc.maxWidth,
       height: bc.maxHeight,
@@ -255,49 +281,65 @@ class TopicsWidget extends StatelessWidget {
   Stack _buildAnimation(BuildContext context) {
     return Stack(
       children: [
+        //TODO: could just use this like a new Widget for each item.
         Positioned(
           top: 0,
           height: bc.maxHeight * 0.1,
           left: 400 - (400 * topicAnimation.value),
-          child: Text(
-            'Declarative style',
-            style: Theme.of(context).textTheme.headline6,
+          child: Opacity(
+            opacity: getOpacity(),
+            child: Text(
+              'Declarative style',
+              style: Theme.of(context).textTheme.headline6,
+            ),
           ),
         ),
         Positioned(
           top: bc.maxHeight * 0.1,
           height: bc.maxHeight * 0.1,
           left: 400 - (400 * topicAnimation2.value),
-          child: Text(
-            'Premade Widgets',
-            style: Theme.of(context).textTheme.headline6,
+          child: Opacity(
+            opacity: getOpacity(),
+            child: Text(
+              'Premade Widgets',
+              style: Theme.of(context).textTheme.headline6,
+            ),
           ),
         ),
         Positioned(
           top: bc.maxHeight * 0.2,
           height: bc.maxHeight * 0.1,
           left: 400 - (400 * topicAnimation3.value),
-          child: Text(
-            'Stateful hot reload',
-            style: Theme.of(context).textTheme.headline6,
+          child: Opacity(
+            opacity: getOpacity(),
+            child: Text(
+              'Stateful hot reload',
+              style: Theme.of(context).textTheme.headline6,
+            ),
           ),
         ),
         Positioned(
           top: bc.maxHeight * 0.3,
           height: bc.maxHeight * 0.1,
           left: 400 - (400 * topicAnimation4.value),
-          child: Text(
-            'Native performance',
-            style: Theme.of(context).textTheme.headline6,
+          child: Opacity(
+            opacity: getOpacity(),
+            child: Text(
+              'Native performance',
+              style: Theme.of(context).textTheme.headline6,
+            ),
           ),
         ),
         Positioned(
           top: bc.maxHeight * 0.4,
           height: bc.maxHeight * 0.1,
           left: 400 - (400 * topicAnimation5.value),
-          child: Text(
-            'Great community',
-            style: Theme.of(context).textTheme.headline6,
+          child: Opacity(
+            opacity: getOpacity(),
+            child: Text(
+              'Great community',
+              style: Theme.of(context).textTheme.headline6,
+            ),
           ),
         ),
       ],
@@ -305,44 +347,30 @@ class TopicsWidget extends StatelessWidget {
   }
 }
 
-class MyAppBarIcon extends StatefulWidget {
+class MyAppBarIcon extends StatelessWidget {
   MyAppBarIcon({
     required this.animationDuration,
     required this.toggleAnimation,
+    required this.isOpen,
   });
 
   final Duration animationDuration;
   final void Function() toggleAnimation;
+  final bool isOpen;
 
-  @override
-  _MyAppBarIconState createState() => _MyAppBarIconState();
-}
-
-class _MyAppBarIconState extends State<MyAppBarIcon> {
-  bool isOpen = false;
-
-  void toggle() {
-    widget.toggleAnimation();
-
-    setState(() {
-      isOpen = !isOpen;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return AnimatedCrossFade(
       firstChild: IconButton(
-        onPressed: toggle,
+        onPressed: toggleAnimation,
         icon: Icon(Icons.menu, color: Colors.black),
       ),
       secondChild: IconButton(
-        onPressed: toggle,
+        onPressed: toggleAnimation,
         icon: Icon(Icons.close, color: Colors.black),
       ),
       crossFadeState:
-          isOpen ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-      duration: widget.animationDuration,
+          isOpen ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+      duration: animationDuration,
     );
   }
 }
